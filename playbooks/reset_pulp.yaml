@@ -1,0 +1,46 @@
+# Requires Ansible 2.5+
+# pip install --upgrade ansible
+# run with
+# ansible-playbook reset_pulp.yaml  -i host.where.pulp.is.installed.com, -v
+
+- name: Reset Pulp
+  hosts: all
+  gather_facts: false
+  become: true
+  user: root
+
+  vars:
+    ansible_connection: ssh 
+    ansible_ssh_user: root
+    services:
+      - qpidd
+      - httpd
+      - pulp_celerybeat
+      - pulp_resource_manager
+      - pulp_workers
+
+  tasks:
+
+    - name: Stop all services
+      loop: "{{ services }}"
+      systemd:
+        name: "{{ item }}"
+        state: stopped
+      
+    - name: Drop Mongo Database
+      shell: mongo pulp_database --eval 'db.dropDatabase()'
+
+    - name: Run Pulp Manage DB
+      shell: runuser --shell /bin/sh apache --command pulp-manage-db
+
+    - name: Remove Pulp Contents
+      loop:
+        - /var/lib/pulp/content
+        - /var/lib/pulp/published
+      file: path={{item}} state=absent
+
+    - name: Start all services
+      loop: "{{ services }}"
+      systemd:
+        name: "{{ item }}"
+        state: started
