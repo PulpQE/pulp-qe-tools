@@ -44,3 +44,9 @@
       systemd:
         name: "{{ item }}"
         state: started
+
+    - name: Run Pulp status  
+      shell: pulp-admin -v status
+      register: out
+
+    - debug: var=out.stdout_lines
