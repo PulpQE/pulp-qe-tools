@@ -3,7 +3,7 @@
 # run with
 # ansible-playbook reset_pulp.yaml  -i host.where.pulp.is.installed.com, -v
 
-- name: Reset Pulp
+- name: Reset Pulp 2
   hosts: all
   gather_facts: false
   become: true
@@ -13,11 +13,11 @@
     ansible_connection: ssh 
     ansible_ssh_user: root
     services:
-      - qpidd
       - httpd
+      - pulp_workers
       - pulp_celerybeat
       - pulp_resource_manager
-      - pulp_workers
+      - qpidd
 
   tasks:
 
