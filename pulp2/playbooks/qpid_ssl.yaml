@@ -146,28 +146,37 @@
         owner: root
         group: qpidd
 
+    - name: crt files
+      find:
+        paths: "{{ tempdir }}"
+        patterns: '*.crt'
+      register: crtfind
+
     - name: Copy crt files
       copy:
         remote_src: yes
         src: "{{ item }}"
-        dest: "{{ instdir }}"
+        dest: "{{ instdir }}/"
         owner: root
         group: apache
         mode: "640"
-      with_fileglob:
-        - "{{ tempdir }}/*.crt"
+      loop: "{{ crtfind.files }}"
+
+    - name: nss db and password files
+      find:
+        paths: "{{ tempdir }}"
+        patterns: '*.db,password'
+      register: nssfind
 
     - name: Copy nss database and password file
       copy:
         remote_src: yes
         src: "{{ item }}"
-        dest: "{{ instdir }}/nss"
+        dest: "{{ instdir }}/nss/"
         owner: root
         group: qpidd
         mode: "640"
-      with_fileglob:
-        - "{{ tempdir }}/*.db"
-        - "{{ pwdfile }}"
+      loop: "{{ nssfind.files }}"
 
     - debug:
           var: tempdir
