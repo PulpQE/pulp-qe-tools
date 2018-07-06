@@ -155,7 +155,7 @@
     - name: Copy crt files
       copy:
         remote_src: yes
-        src: "{{ item }}"
+        src: "{{ item.path }}"
         dest: "{{ instdir }}/"
         owner: root
         group: apache
@@ -171,7 +171,7 @@
     - name: Copy nss database and password file
       copy:
         remote_src: yes
-        src: "{{ item }}"
+        src: "{{ item.path }}"
         dest: "{{ instdir }}/nss/"
         owner: root
         group: qpidd
