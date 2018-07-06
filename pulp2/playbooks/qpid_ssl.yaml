@@ -1,0 +1,173 @@
+# Requires Ansible 2.5+
+# pip install --upgrade ansible
+# run with
+# ansible-playbook qpid_ssl.yaml -i host.where.pulp.is.installed.com, -v
+
+- name: Set QPID SSL
+  hosts: all
+  gather_facts: false
+  become: true
+  user: root
+
+  vars:
+    ansible_connection: ssh 
+    ansible_ssh_user: root
+  
+  tasks:
+
+    - name: create temporary working directory
+      tempfile:
+        state: directory
+      register: temp_dir
+
+    - set_fact: 
+        tempdir: "{{ temp_dir.path }}"
+        instdir: "/etc/pki/qpid"
+        clientdir: "{{ temp_dir.path }}/client"
+        hostname: "{{ inventory_hostname }}"
+        pwdfile: "{{ temp_dir.path }}/password"
+        seedfile: "{{ temp_dir.path }}/seed"
+        valid: "12"
+        ca_path: "/etc/pki/pulp/ca.crt"
+        ca_key_path: "/etc/pki/pulp/ca.key"
+        ca_name: "ca"
+        db_password: "pulp"
+        trust: "TCu,Cu,Tuw"
+        client_subject: "CN=client,O=pulp,ST=Alabama,C=US"
+        client_nickname: "client"
+        broker_subject: "CN={{ inventory_hostname }},O=pulp,ST=Alabama,C=US"
+        broker_nickname: "broker"
+
+    # SETUP
+
+    - name: Create the password file
+      lineinfile:
+        dest: "{{ pwdfile }}"
+        line: "{{ db_password }}"
+        create: yes
+
+    - name: Create the main NSS db
+      command: certutil -N -d {{ tempdir }} -f {{ pwdfile }}
+      args:
+        creates: "{{ tempdir }}/cert8.db"
+
+    - name: Generates the p12 certificate file
+      command: openssl pkcs12 -export -in {{ ca_path }} -inkey {{ ca_key_path }} \
+        -out {{ tempdir }}/ca.p12 -name '{{ ca_name }}' -password file:{{ pwdfile }}
+      args:
+        creates: "{{ tempdir }}/ca.p12"
+
+    - name: Import the p12 file to nss database
+      command: pk12util -d {{ tempdir }} -n "{{ ca_name }}" -i {{ tempdir }}/ca.p12 \
+        -w {{ pwdfile }} -k {{ pwdfile }}
+
+    - name: Modify the Trust attributes to the certificate
+      command: certutil -d {{ tempdir }} -n "{{ ca_name }}" -M -t "{{ trust }}" \
+        -f {{ pwdfile }}
+
+    - name: Output ca certificate to ca.crt file
+      command: certutil -L -d {{ tempdir }} -n "{{ ca_name }}" -a \
+        -o {{ tempdir }}/ca.crt -f {{ pwdfile }}
+      args:
+        creates: "{{ tempdir }}/ca.crt"
+
+    # BROKER CERT
+
+    - name: Seed the seed file
+      command: dd if=/dev/urandom of={{ seedfile }} bs=8192 count=1
+
+    - name: Create broker cert signing request
+      command: certutil -R -d {{ tempdir }} -s {{ broker_subject }} -a \
+        -o {{ tempdir }}/broker.req -f {{ pwdfile }} -z {{ seedfile }}
+
+    - name: Sign the broker cert w/ CA
+      command: certutil -C -d {{ tempdir }} -c "{{ ca_name }}" -v {{ valid }} \
+        -uV -m1 -a -i {{ tempdir }}/broker.req -f {{ pwdfile }} -o {{ tempdir }}/broker.crt
+
+    - name: Import the broker cert
+      command: certutil -A -d {{ tempdir }} -n "{{ broker_nickname }}" -t ",," \
+        -a -i {{ tempdir }}/broker.crt
+
+    # CLIENT CERT
+
+    - name: Create client db directory
+      file:
+        path: "{{ clientdir }}"
+        state: directory
+
+    - name: Create client nss db
+      command: certutil -N -d {{ clientdir }} -f {{ pwdfile }}
+      args:
+        creates: "{{ clientdir }}/cert8.db"
+
+    - name: Seed the seed file
+      command: dd if=/dev/urandom of={{ seedfile }} bs=8192 count=1
+
+    - name: Create client cert signing request
+      command: certutil -R -d {{ clientdir }} -s {{ client_subject }} -a \
+        -o {{ tempdir }}/client.req -f {{ pwdfile }} -z {{ seedfile }}
+
+    - name: Sign the client cert w/ CA
+      command: certutil -C -d {{ tempdir }} -c "{{ ca_name }}" -v {{ valid }} \
+        -uC -m2 -a -i {{ tempdir }}/client.req -f {{ pwdfile }} -o {{ tempdir }}/client.crt
+
+    - name: Import the broker cert
+      command: certutil -A -d {{ clientdir }} -n "{{ client_nickname }}" -t ",," \
+        -a -i {{ tempdir }}/client.crt
+
+    - name: Export client p12
+      command: pk12util -d {{ clientdir }} -n "{{ client_nickname }}" \
+        -o {{ tempdir }}/client.p12 -w {{ pwdfile }} -W {{ db_password }} \
+        -k {{ pwdfile }} -K {{ db_password }}
+      args:
+        creates: "{{ tempdir }}/client.p12" 
+
+    - name: Generates a new client key & cert
+      command: openssl pkcs12 -in {{ tempdir }}/client.p12 -nodes \
+        -out {{ tempdir }}/client.crt -password file:{{ pwdfile }}
+      args:
+        creates: "{{ tempdir }}/client.crt"
+
+    # Install the certs 
+
+    - name: Create target directory
+      file:
+        path: "{{ instdir }}"
+        state: directory
+        mode: "755"
+        owner: root
+        group: apache
+      
+    - name: Create nss db dir
+      file:
+        path: "{{ instdir }}/nss"
+        state: directory
+        mode: "755"
+        owner: root
+        group: qpidd
+
+    - name: Copy crt files
+      copy:
+        remote_src: yes
+        src: "{{ item }}"
+        dest: "{{ instdir }}"
+        owner: root
+        group: apache
+        mode: "640"
+      with_fileglob:
+        - "{{ tempdir }}/*.crt"
+
+    - name: Copy nss database and password file
+      copy:
+        remote_src: yes
+        src: "{{ item }}"
+        dest: "{{ instdir }}/nss"
+        owner: root
+        group: qpidd
+        mode: "640"
+      with_fileglob:
+        - "{{ tempdir }}/*.db"
+        - "{{ pwdfile }}"
+
+    - debug:
+          var: tempdir
