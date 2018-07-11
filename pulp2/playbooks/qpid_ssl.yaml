@@ -12,6 +12,12 @@
   vars:
     ansible_connection: ssh 
     ansible_ssh_user: root
+    services:
+      - httpd
+      - pulp_workers
+      - pulp_celerybeat
+      - pulp_resource_manager
+      - qpidd
   
   tasks:
 
@@ -20,14 +26,16 @@
         state: directory
       register: temp_dir
 
-    - set_fact: 
+    - set_fact:
+        hostname: "{{ inventory_hostname.rpartition('@')[-1] }}"
         tempdir: "{{ temp_dir.path }}"
+
+    - set_fact:
         instdir: "/etc/pki/qpid"
-        clientdir: "{{ temp_dir.path }}/client"
-        hostname: "{{ inventory_hostname }}"
-        pwdfile: "{{ temp_dir.path }}/password"
-        seedfile: "{{ temp_dir.path }}/seed"
-        valid: "12"
+        clientdir: "{{ tempdir }}/client"
+        pwdfile: "{{ tempdir }}/password"
+        seedfile: "{{ tempdir }}/seed"
+        valid: 12
         ca_path: "/etc/pki/pulp/ca.crt"
         ca_key_path: "/etc/pki/pulp/ca.key"
         ca_name: "ca"
@@ -35,7 +43,7 @@
         trust: "TCu,Cu,Tuw"
         client_subject: "CN=client,O=pulp,ST=Alabama,C=US"
         client_nickname: "client"
-        broker_subject: "CN={{ inventory_hostname }},O=pulp,ST=Alabama,C=US"
+        broker_subject: "CN={{ hostname }},O=pulp,ST=Alabama,C=US"
         broker_nickname: "broker"
 
     # SETUP
@@ -47,26 +55,27 @@
         create: yes
 
     - name: Create the main NSS db
-      command: certutil -N -d {{ tempdir }} -f {{ pwdfile }}
+      shell: certutil -N -d {{ tempdir }} -f {{ pwdfile }}
       args:
         creates: "{{ tempdir }}/cert8.db"
 
     - name: Generates the p12 certificate file
-      command: openssl pkcs12 -export -in {{ ca_path }} -inkey {{ ca_key_path }} \
-        -out {{ tempdir }}/ca.p12 -name '{{ ca_name }}' -password file:{{ pwdfile }}
+      shell: |
+        openssl pkcs12 -export -in {{ ca_path }} -inkey {{ ca_key_path }} \
+        -out {{ tempdir }}/ca.p12 -name "{{ ca_name }}" -password file:{{ pwdfile }}
       args:
         creates: "{{ tempdir }}/ca.p12"
 
     - name: Import the p12 file to nss database
-      command: pk12util -d {{ tempdir }} -n "{{ ca_name }}" -i {{ tempdir }}/ca.p12 \
+      shell: pk12util -d {{ tempdir }} -n "{{ ca_name }}" -i {{ tempdir }}/ca.p12 \
         -w {{ pwdfile }} -k {{ pwdfile }}
 
     - name: Modify the Trust attributes to the certificate
-      command: certutil -d {{ tempdir }} -n "{{ ca_name }}" -M -t "{{ trust }}" \
+      shell: certutil -d {{ tempdir }} -n "{{ ca_name }}" -M -t "{{ trust }}" \
         -f {{ pwdfile }}
 
     - name: Output ca certificate to ca.crt file
-      command: certutil -L -d {{ tempdir }} -n "{{ ca_name }}" -a \
+      shell: certutil -L -d {{ tempdir }} -n "{{ ca_name }}" -a \
         -o {{ tempdir }}/ca.crt -f {{ pwdfile }}
       args:
         creates: "{{ tempdir }}/ca.crt"
@@ -74,18 +83,18 @@
     # BROKER CERT
 
     - name: Seed the seed file
-      command: dd if=/dev/urandom of={{ seedfile }} bs=8192 count=1
+      shell: dd if=/dev/urandom of={{ seedfile }} bs=8192 count=1
 
     - name: Create broker cert signing request
-      command: certutil -R -d {{ tempdir }} -s {{ broker_subject }} -a \
+      shell: certutil -R -d {{ tempdir }} -s {{ broker_subject }} -a \
         -o {{ tempdir }}/broker.req -f {{ pwdfile }} -z {{ seedfile }}
 
     - name: Sign the broker cert w/ CA
-      command: certutil -C -d {{ tempdir }} -c "{{ ca_name }}" -v {{ valid }} \
+      shell: certutil -C -d {{ tempdir }} -c "{{ ca_name }}" -v {{ valid }} \
         -uV -m1 -a -i {{ tempdir }}/broker.req -f {{ pwdfile }} -o {{ tempdir }}/broker.crt
 
     - name: Import the broker cert
-      command: certutil -A -d {{ tempdir }} -n "{{ broker_nickname }}" -t ",," \
+      shell: certutil -A -d {{ tempdir }} -n "{{ broker_nickname }}" -t ",," \
         -a -i {{ tempdir }}/broker.crt
 
     # CLIENT CERT
@@ -96,34 +105,36 @@
         state: directory
 
     - name: Create client nss db
-      command: certutil -N -d {{ clientdir }} -f {{ pwdfile }}
+      shell: certutil -N -d {{ clientdir }} -f {{ pwdfile }}
       args:
         creates: "{{ clientdir }}/cert8.db"
 
     - name: Seed the seed file
-      command: dd if=/dev/urandom of={{ seedfile }} bs=8192 count=1
+      shell: dd if=/dev/urandom of={{ seedfile }} bs=8192 count=1
 
     - name: Create client cert signing request
-      command: certutil -R -d {{ clientdir }} -s {{ client_subject }} -a \
+      shell: certutil -R -d {{ clientdir }} -s {{ client_subject }} -a \
         -o {{ tempdir }}/client.req -f {{ pwdfile }} -z {{ seedfile }}
 
     - name: Sign the client cert w/ CA
-      command: certutil -C -d {{ tempdir }} -c "{{ ca_name }}" -v {{ valid }} \
-        -uC -m2 -a -i {{ tempdir }}/client.req -f {{ pwdfile }} -o {{ tempdir }}/client.crt
+      shell: certutil -C -d {{ tempdir }} -c "{{ ca_name }}" -v {{ valid }} \
+        -uC -m2 -a -i {{ tempdir }}/client.req -f {{ pwdfile }} -o {{ tempdir }}/client_cert.crt
+      args:
+        creates: "{{ tempdir }}/client_cert.crt"
 
-    - name: Import the broker cert
-      command: certutil -A -d {{ clientdir }} -n "{{ client_nickname }}" -t ",," \
-        -a -i {{ tempdir }}/client.crt
+    - name: Import the client cert
+      shell: certutil -A -d {{ clientdir }} -n "{{ client_nickname }}" -t ",," \
+        -a -i {{ tempdir }}/client_cert.crt
 
     - name: Export client p12
-      command: pk12util -d {{ clientdir }} -n "{{ client_nickname }}" \
+      shell: pk12util -d {{ clientdir }} -n "{{ client_nickname }}" \
         -o {{ tempdir }}/client.p12 -w {{ pwdfile }} -W {{ db_password }} \
         -k {{ pwdfile }} -K {{ db_password }}
       args:
         creates: "{{ tempdir }}/client.p12" 
 
     - name: Generates a new client key & cert
-      command: openssl pkcs12 -in {{ tempdir }}/client.p12 -nodes \
+      shell: openssl pkcs12 -in {{ tempdir }}/client.p12 -nodes \
         -out {{ tempdir }}/client.crt -password file:{{ pwdfile }}
       args:
         creates: "{{ tempdir }}/client.crt"
@@ -180,3 +191,88 @@
 
     - debug:
           var: tempdir
+
+    # WRITE CONFIG FILES
+
+    # qpid CONFIG
+
+    - name: Disable qpidd.conf auth
+      lineinfile:
+        path: /etc/qpid/qpidd.conf
+        regexp: '^auth=yes$'
+        line: 'auth=no'
+        backrefs: yes
+
+    - name: Write qpidd.conf block
+      blockinfile:
+        path: /etc/qpid/qpidd.conf
+        insertafter: "auth=no"
+        # marker: "# {mark} ANSIBLE MANAGED BLOCK"
+        block: | 
+          require-encryption=yes
+          ssl-require-client-authentication=yes
+          ssl-cert-db={{ instdir }}/nss
+          ssl-cert-password-file={{ instdir }}/nss/password
+          ssl-cert-name=broker
+          ssl-port=5671
+        
+    # Pulp CONFIG
+
+    - name: Comment out existing messaging section
+      lineinfile:
+        path: /etc/pulp/server.conf
+        regexp: '^\[messaging\]$'
+        line: '# [messaging]'
+        backrefs: yes
+
+    - name: Write [messaging] block
+      blockinfile:
+        path: /etc/pulp/server.conf
+        insertbefore: "# = Asynchronous Tasks ="
+        marker: "# {mark} ANSIBLE MANAGED BLOCK - messaging"
+        block: |
+          [messaging]
+          url: ssl://{{ hostname }}:5671
+          cacert: {{ ca_path }}
+          clientcert: {{ instdir }}/client.crt
+
+    - name: Comment out existing tasks section
+      lineinfile:
+        path: /etc/pulp/server.conf
+        regexp: '^\[tasks\]$'
+        line: '# [tasks]'
+        backrefs: yes
+
+    - name: Write [tasks] block
+      blockinfile:
+        path: /etc/pulp/server.conf
+        insertbefore: "# = Email ="
+        marker: "# {mark} ANSIBLE MANAGED BLOCK - tasks"
+        block: |
+          [tasks]
+          broker_url: qpid://{{ hostname }}:5671/
+          celery_require_ssl: true
+          cacert: {{ ca_path }}
+          keyfile: {{ instdir }}/client.crt
+          certfile: {{ instdir }}/client.crt
+
+
+    # RESTART SERVICES 
+
+    - name: Stop all services
+      loop: "{{ services }}"
+      systemd:
+        name: "{{ item }}"
+        state: stopped
+
+    - name: Start all services
+      loop: "{{ services }}"
+      systemd:
+        name: "{{ item }}"
+        state: started
+
+    - name: Run Pulp status  
+      shell: pulp-admin -v status
+      register: out
+
+    - debug: var=out.stdout_lines

@@ -290,6 +290,10 @@ $ systemctl restart pulp_celerybeat
 $ systemctl restart pulp_resource_manager
 $ systemctl restart goferd 
 $ systemctl restart qpidd
+
+or
+
+$ systemctl restart {httpd,pulp_workers,pulp_celerybeat,pulp_resource_manager,qpidd}
 "
 
 echo ""
