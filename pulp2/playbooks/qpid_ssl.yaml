@@ -55,27 +55,30 @@
         create: yes
 
     - name: Create the main NSS db
-      shell: certutil -N -d {{ tempdir }} -f {{ pwdfile }}
+      command: certutil -N -d {{ tempdir }} -f {{ pwdfile }}
       args:
         creates: "{{ tempdir }}/cert8.db"
 
     - name: Generates the p12 certificate file
-      shell: |
-        openssl pkcs12 -export -in {{ ca_path }} -inkey {{ ca_key_path }} \
+      command: >
+        openssl pkcs12 -export -in {{ ca_path }} -inkey {{ ca_key_path }}
         -out {{ tempdir }}/ca.p12 -name "{{ ca_name }}" -password file:{{ pwdfile }}
       args:
         creates: "{{ tempdir }}/ca.p12"
 
     - name: Import the p12 file to nss database
-      shell: pk12util -d {{ tempdir }} -n "{{ ca_name }}" -i {{ tempdir }}/ca.p12 \
+      command: >
+        pk12util -d {{ tempdir }} -n "{{ ca_name }}" -i {{ tempdir }}/ca.p12
         -w {{ pwdfile }} -k {{ pwdfile }}
 
     - name: Modify the Trust attributes to the certificate
-      shell: certutil -d {{ tempdir }} -n "{{ ca_name }}" -M -t "{{ trust }}" \
+      command: >
+        certutil -d {{ tempdir }} -n "{{ ca_name }}" -M -t "{{ trust }}"
         -f {{ pwdfile }}
 
     - name: Output ca certificate to ca.crt file
-      shell: certutil -L -d {{ tempdir }} -n "{{ ca_name }}" -a \
+      command: >
+        certutil -L -d {{ tempdir }} -n "{{ ca_name }}" -a 
         -o {{ tempdir }}/ca.crt -f {{ pwdfile }}
       args:
         creates: "{{ tempdir }}/ca.crt"
@@ -83,18 +86,21 @@
     # BROKER CERT
 
     - name: Seed the seed file
-      shell: dd if=/dev/urandom of={{ seedfile }} bs=8192 count=1
+      command: dd if=/dev/urandom of={{ seedfile }} bs=8192 count=1
 
     - name: Create broker cert signing request
-      shell: certutil -R -d {{ tempdir }} -s {{ broker_subject }} -a \
+      command: >
+        certutil -R -d {{ tempdir }} -s {{ broker_subject }} -a
         -o {{ tempdir }}/broker.req -f {{ pwdfile }} -z {{ seedfile }}
 
     - name: Sign the broker cert w/ CA
-      shell: certutil -C -d {{ tempdir }} -c "{{ ca_name }}" -v {{ valid }} \
+      command: >
+        certutil -C -d {{ tempdir }} -c "{{ ca_name }}" -v {{ valid }} 
         -uV -m1 -a -i {{ tempdir }}/broker.req -f {{ pwdfile }} -o {{ tempdir }}/broker.crt
 
     - name: Import the broker cert
-      shell: certutil -A -d {{ tempdir }} -n "{{ broker_nickname }}" -t ",," \
+      command: >
+        certutil -A -d {{ tempdir }} -n "{{ broker_nickname }}" -t ",,"
         -a -i {{ tempdir }}/broker.crt
 
     # CLIENT CERT
@@ -105,36 +111,41 @@
         state: directory
 
     - name: Create client nss db
-      shell: certutil -N -d {{ clientdir }} -f {{ pwdfile }}
+      command: certutil -N -d {{ clientdir }} -f {{ pwdfile }}
       args:
         creates: "{{ clientdir }}/cert8.db"
 
     - name: Seed the seed file
-      shell: dd if=/dev/urandom of={{ seedfile }} bs=8192 count=1
+      command: dd if=/dev/urandom of={{ seedfile }} bs=8192 count=1
 
     - name: Create client cert signing request
-      shell: certutil -R -d {{ clientdir }} -s {{ client_subject }} -a \
+      command: >
+        certutil -R -d {{ clientdir }} -s {{ client_subject }} -a 
         -o {{ tempdir }}/client.req -f {{ pwdfile }} -z {{ seedfile }}
 
     - name: Sign the client cert w/ CA
-      shell: certutil -C -d {{ tempdir }} -c "{{ ca_name }}" -v {{ valid }} \
+      command: >
+        certutil -C -d {{ tempdir }} -c "{{ ca_name }}" -v {{ valid }} 
         -uC -m2 -a -i {{ tempdir }}/client.req -f {{ pwdfile }} -o {{ tempdir }}/client_cert.crt
       args:
         creates: "{{ tempdir }}/client_cert.crt"
 
     - name: Import the client cert
-      shell: certutil -A -d {{ clientdir }} -n "{{ client_nickname }}" -t ",," \
+      command: >
+        certutil -A -d {{ clientdir }} -n "{{ client_nickname }}" -t ",,"
         -a -i {{ tempdir }}/client_cert.crt
 
     - name: Export client p12
-      shell: pk12util -d {{ clientdir }} -n "{{ client_nickname }}" \
-        -o {{ tempdir }}/client.p12 -w {{ pwdfile }} -W {{ db_password }} \
+      command: >
+        pk12util -d {{ clientdir }} -n "{{ client_nickname }}" 
+        -o {{ tempdir }}/client.p12 -w {{ pwdfile }} -W {{ db_password }}
         -k {{ pwdfile }} -K {{ db_password }}
       args:
         creates: "{{ tempdir }}/client.p12" 
 
     - name: Generates a new client key & cert
-      shell: openssl pkcs12 -in {{ tempdir }}/client.p12 -nodes \
+      command: >
+        openssl pkcs12 -in {{ tempdir }}/client.p12 -nodes 
         -out {{ tempdir }}/client.crt -password file:{{ pwdfile }}
       args:
         creates: "{{ tempdir }}/client.crt"
@@ -272,7 +283,7 @@
         state: started
 
     - name: Run Pulp status  
-      shell: pulp-admin -v status
+      command: pulp-admin -v status
       register: out
 
     - debug: var=out.stdout_lines
