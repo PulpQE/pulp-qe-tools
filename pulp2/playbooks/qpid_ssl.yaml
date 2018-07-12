@@ -27,6 +27,7 @@
       register: temp_dir
 
     - set_fact:
+        # when passing `-i root@hostname,` removes the `root@`
         hostname: "{{ inventory_hostname.rpartition('@')[-1] }}"
         tempdir: "{{ temp_dir.path }}"
 
@@ -46,7 +47,7 @@
         broker_subject: "CN={{ hostname }},O=pulp,ST=Alabama,C=US"
         broker_nickname: "broker"
 
-    # SETUP
+    # SETUP BASE NSS db and Certs
 
     - name: Create the password file
       lineinfile:
@@ -55,7 +56,7 @@
         create: yes
 
     - name: Create the main NSS db
-      command: certutil -N -d {{ tempdir }} -f {{ pwdfile }}
+      command: certutil -N -d {{ tempdir }} --empty-password
       args:
         creates: "{{ tempdir }}/cert8.db"
 
@@ -69,17 +70,16 @@
     - name: Import the p12 file to nss database
       command: >
         pk12util -d {{ tempdir }} -n "{{ ca_name }}" -i {{ tempdir }}/ca.p12
-        -w {{ pwdfile }} -k {{ pwdfile }}
+        -w {{ pwdfile }}
 
     - name: Modify the Trust attributes to the certificate
       command: >
         certutil -d {{ tempdir }} -n "{{ ca_name }}" -M -t "{{ trust }}"
-        -f {{ pwdfile }}
 
     - name: Output ca certificate to ca.crt file
       command: >
         certutil -L -d {{ tempdir }} -n "{{ ca_name }}" -a 
-        -o {{ tempdir }}/ca.crt -f {{ pwdfile }}
+        -o {{ tempdir }}/ca.crt
       args:
         creates: "{{ tempdir }}/ca.crt"
 
@@ -91,12 +91,12 @@
     - name: Create broker cert signing request
       command: >
         certutil -R -d {{ tempdir }} -s {{ broker_subject }} -a
-        -o {{ tempdir }}/broker.req -f {{ pwdfile }} -z {{ seedfile }}
+        -o {{ tempdir }}/broker.req -z {{ seedfile }}
 
     - name: Sign the broker cert w/ CA
       command: >
         certutil -C -d {{ tempdir }} -c "{{ ca_name }}" -v {{ valid }} 
-        -uV -m1 -a -i {{ tempdir }}/broker.req -f {{ pwdfile }} -o {{ tempdir }}/broker.crt
+        -uV -m1 -a -i {{ tempdir }}/broker.req -o {{ tempdir }}/broker.crt
 
     - name: Import the broker cert
       command: >
@@ -111,7 +111,7 @@
         state: directory
 
     - name: Create client nss db
-      command: certutil -N -d {{ clientdir }} -f {{ pwdfile }}
+      command: certutil -N -d {{ clientdir }} --empty-password
       args:
         creates: "{{ clientdir }}/cert8.db"
 
@@ -121,25 +121,24 @@
     - name: Create client cert signing request
       command: >
         certutil -R -d {{ clientdir }} -s {{ client_subject }} -a 
-        -o {{ tempdir }}/client.req -f {{ pwdfile }} -z {{ seedfile }}
+        -o {{ tempdir }}/client.req -z {{ seedfile }}
 
     - name: Sign the client cert w/ CA
       command: >
         certutil -C -d {{ tempdir }} -c "{{ ca_name }}" -v {{ valid }} 
-        -uC -m2 -a -i {{ tempdir }}/client.req -f {{ pwdfile }} -o {{ tempdir }}/client_cert.crt
+        -uC -m2 -a -i {{ tempdir }}/client.req -o {{ tempdir }}/tmp_client_cert.crt
       args:
-        creates: "{{ tempdir }}/client_cert.crt"
+        creates: "{{ tempdir }}/tmp_client_cert.crt"
 
     - name: Import the client cert
       command: >
         certutil -A -d {{ clientdir }} -n "{{ client_nickname }}" -t ",,"
-        -a -i {{ tempdir }}/client_cert.crt
+        -a -i {{ tempdir }}/tmp_client_cert.crt
 
     - name: Export client p12
       command: >
         pk12util -d {{ clientdir }} -n "{{ client_nickname }}" 
         -o {{ tempdir }}/client.p12 -w {{ pwdfile }} -W {{ db_password }}
-        -k {{ pwdfile }} -K {{ db_password }}
       args:
         creates: "{{ tempdir }}/client.p12" 
 
@@ -150,7 +149,7 @@
       args:
         creates: "{{ tempdir }}/client.crt"
 
-    # Install the certs 
+    # Install the certs to the destination directory
 
     - name: Create target directory
       file:
@@ -168,7 +167,7 @@
         owner: root
         group: qpidd
 
-    - name: crt files
+    - name: Find crt files to copy
       find:
         paths: "{{ tempdir }}"
         patterns: '*.crt'
@@ -184,7 +183,7 @@
         mode: "640"
       loop: "{{ crtfind.files }}"
 
-    - name: nss db and password files
+    - name: Find nss db and password files to copy
       find:
         paths: "{{ tempdir }}"
         patterns: '*.db,password'
@@ -223,7 +222,7 @@
           require-encryption=yes
           ssl-require-client-authentication=yes
           ssl-cert-db={{ instdir }}/nss
-          ssl-cert-password-file={{ instdir }}/nss/password
+          #ssl-cert-password-file={{ instdir }}/nss/password
           ssl-cert-name=broker
           ssl-port=5671
         
