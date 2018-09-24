@@ -48,6 +48,7 @@
       systemd:
         name: firewalld
         state: stopped
+        masked: yes
 
     - name: Clone the pulp devel repo
       git:
