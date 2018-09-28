@@ -1,5 +1,5 @@
 from contextlib import contextmanager
-# Python 3.7 introduces surpress
+# Python 3.4 introduced surpress
 # from contextlib import suppress
 # with suppress(FileNotFoundError):
 #   os.remove('somefile.tmp')
