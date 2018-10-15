@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Clone the repos
-yum -y install python36 git
+yum -y install python36 git attr
 
 git clone https://github.com/pulpqe/pulp-smash
 git clone https://github.com/pulpqe/pulp-2-tests
