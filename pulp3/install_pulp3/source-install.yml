@@ -1,4 +1,4 @@
-# ansible-playbook -vvv -i "${PULP3_HOST}", -u root source-install.yml
+# ansible-playbook -vvv -i <hostname>, -u root source-install.yml
 ---
 - hosts: all
   vars:
@@ -8,34 +8,9 @@
     pulp_secret_key: "unsafe_default"
     pulp_default_admin_password: admin
     pulp_install_plugins:
-      pulp-rpm:
-        app_label: "pulp_rpm"
-        source_dir: "https://github.com/pulp/pulp_rpm/tarball/master"
       pulp-file:
         app_label: "pulp_file"
         source_dir: "https://github.com/pulp/pulp_file/tarball/master"
-      pulp-docker:
-        app_label: "pulp_docker"
-        source_dir: "https://github.com/pulp/pulp_docker/tarball/master"
-  pre_tasks:
-    - name: Install extra plugins requirements
-      package: name={{item}} state=present
-      loop:
-        - gcc
-        - make
-        - cmake
-        - bzip2-devel
-        - expat-devel
-        - file-devel
-        - glib2-devel
-        - libcurl-devel
-        - libxml2-devel
-        - python3-devel
-        - rpm-devel
-        - openssl-devel
-        - sqlite-devel
-        - xz-devel
-        - zlib-devel
   roles:
     - pulp3-postgresql
     - pulp3-workers

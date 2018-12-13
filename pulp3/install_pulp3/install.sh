@@ -1,12 +1,14 @@
 #! /bin/bash
 
 # export PULP3_HOST=myhostname.com
+# export PULP3_PLAYBOOK=source-install-plugins.yml
 # curl https://raw.githubusercontent.com/PulpQE/pulp-qe-tools/master/pulp3/install_pulp3/install.sh | bash
 
-set -euo pipefail
+HOST="${PULP3_HOST:-$(hostname)}"
+echo "Installing on host: ${HOST} - set PULP3_HOST env var to override it"
 
-# Shows the hostname where to install or fail
-echo "${PULP3_HOST}"
+PLAYBOOK="${PULP3_PLAYBOOK:-source-install.yml}"
+echo "Will use: ${PLAYBOOK} - set PULP3_PLAYBOOK env var to override it"
 
 # requirements
 if ! git --version > /dev/null; then
@@ -40,25 +42,21 @@ pushd "${tempdir}"
 
 git clone https://github.com/pulp/ansible-pulp3.git
 
-# apply fix to editable mode
+# apply fix to editable mode (cannot use editable mode when installing from github tarball)
+# FIXME: The installer must have this flag as a variable -e pip_editable=false
 sed -i -e 's/editable: yes/editable: no/g' ./ansible-pulp3/roles/pulp3/tasks/install.yml
 sed -i -e 's/editable:yes/editable: no/g' ./ansible-pulp3/roles/pulp3/tasks/install.yml
 
-# apply fix required to install pulp_rpm on fedora
-sed -i -e "s/- name: Install pulpcore package from source/- name: pulp rpm\n      pip:\n        name: scikit-build\n        virtualenv: '{{pulp_install_dir}}'\n\n    - name: Install pulpcore package from source/g" ./ansible-pulp3/roles/pulp3/tasks/install.yml
+# pip should be updated
+# FIXME: installer should take care of it.
+sed -i -e "s/- name: Install pulpcore package from source/- name: Upgrade pip\n      pip:\n        name: pip\n        state: latest\n        virtualenv_command: '{{ pulp_python_interpreter }} -m venv'\n        virtualenv: '{{pulp_install_dir}}'\n\n    - name: Install pulpcore package from source/g" ./ansible-pulp3/roles/pulp3/tasks/install.yml
 
-# echo "
-#     - name: Install pulp_rpm extra packages
-#       pip: 
-#         name= '{{item}}' 
-#         virtualenv = '{{ pulp_install_dir }}'
-#         virtualenv_command: '{{ pulp_python_interpreter }} -m venv'
-#       loop:
-#         - pip
-#         - scikit-build
-# "
+# get the playbook locally
+curl https://raw.githubusercontent.com/PulpQE/pulp-qe-tools/master/pulp3/install_pulp3/ansible.cfg > ansible.cfg
+curl https://raw.githubusercontent.com/PulpQE/pulp-qe-tools/master/pulp3/install_pulp3/"${PLAYBOOK}" > install.yml
 
-curl https://raw.githubusercontent.com/PulpQE/pulp-qe-tools/master/pulp3/install_pulp3/source-install.yml > source-install.yml
+# For local debugging uncomment this line
+# cp ~/Projects/pulp/pulp-qe-tools/pulp3/install_pulp3/"${PLAYBOOK}" install.yml
 
 echo "Installing roles."
 export ANSIBLE_ROLES_PATH="./ansible-pulp3/roles/"
@@ -68,11 +66,12 @@ echo "Available roles."
 ansible-galaxy list
 
 echo "Starting Pulp 3 Installation."
-ansible-playbook -vvv -i "${PULP3_HOST}", -u root source-install.yml 
+ansible-playbook -v -i "${HOST}", -u root install.yml 
 
 echo "Cleaning."
 popd
+
 rm -r -f "${tempdir}"
 
 echo "Is it working?"
-curl -u admin:admin "${PULP3_HOST}":80/pulp/api/v3/status/
+curl -u admin:admin "${HOST}":80/pulp/api/v3/status/

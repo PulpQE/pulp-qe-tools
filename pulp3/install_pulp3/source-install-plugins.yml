@@ -1,0 +1,43 @@
+# ansible-playbook -vvv -i <hostname>, -u root source-install.yml
+---
+- hosts: all
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+    pulp_source_dir: "https://github.com/pulp/pulp/tarball/master"
+    pulp_plugin_source_dir: "https://github.com/pulp/pulpcore-plugin/tarball/master"
+    pulp_secret_key: "unsafe_default"
+    pulp_default_admin_password: admin
+    pulp_install_plugins:
+      pulp-file:
+        app_label: "pulp_file"
+        source_dir: "https://github.com/pulp/pulp_file/tarball/master"
+      pulp-rpm:
+        app_label: "pulp_rpm"
+        source_dir: "https://github.com/pulp/pulp_rpm/tarball/master"
+      pulp-docker:
+        app_label: "pulp_docker"
+        source_dir: "https://github.com/pulp/pulp_docker/tarball/master"
+  pre_tasks:
+    - name: Install pulp rpm requirements
+      package: name={{item}} state=present
+      loop:
+        - gcc
+        - make
+        - cmake
+        - bzip2-devel
+        - expat-devel
+        - file-devel
+        - glib2-devel
+        - libcurl-devel
+        - libxml2-devel
+        - python3-devel
+        - rpm-devel
+        - openssl-devel
+        - sqlite-devel
+        - xz-devel
+        - zlib-devel
+  roles:
+    - pulp3-postgresql
+    - pulp3-workers
+    - pulp3-resource-manager
+    - pulp3-webserver

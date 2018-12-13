@@ -1,0 +1,72 @@
+# Failure when using source-isntall-plugins.yml
+
+TASK [pulp3-postgresql : Create database migrations for pulp_app] 
+****************************************************************************************************
+
+fatal: [fedora-28-pulp-3]: FAILED! => {
+    "changed": true, 
+    "cmd": ["/usr/local/lib/pulp/bin/pulp-manager", "makemigrations", "pulp_app"], 
+    "delta": "0:00:00.928878", "end": "2018-12-13 18:27:41.768276", 
+    "msg": "non-zero return code", "rc": 1, "start": "2018-12-13 18:27:40.839398", 
+    "stderr": "
+        Traceback (most recent call last):\n  File \"/usr/local/lib/pulp/bin/pulp-manager\", line 11, in
+         <module>\n    load_entry_point('pulpcore==3.0.0b16', 'console_scripts', 'pulp-manager')()\n  File
+          \"/usr/local/lib/pulp/lib64/python3.6/site-packages/pulpcore/app/entry_points.py\", line 11, in
+           pulp_manager_entry_point\n    execute_from_command_line(sys.argv)\n  File 
+           \"/usr/local/lib/pulp/lib64/python3.6/site-packages/django/core/management/__init__.py\", line 381,
+            in execute_from_command_line\n    utility.execute()\n  File 
+            \"/usr/local/lib/pulp/lib64/python3.6/site-packages/django/core/management/__init__.py\", line 357, 
+            in execute\n    django.setup()\n  File 
+            \"/usr/local/lib/pulp/lib64/python3.6/site-packages/django/__init__.py\", line 24, in setup\n  
+              apps.populate(settings.INSTALLED_APPS)\n  File 
+              \"/usr/local/lib/pulp/lib64/python3.6/site-packages/django/apps/registry.py\", line 120, in 
+              populate\n    app_config.ready()\n  File 
+              \"/usr/local/lib/pulp/lib64/python3.6/site-packages/pulpcore/app/apps.py\", line 74, in ready\n 
+                 self.import_viewsets()\n  File 
+                 \"/usr/local/lib/pulp/lib64/python3.6/site-packages/pulpcore/app/apps.py\", line 107, in 
+                 import_viewsets\n    self.viewsets_module = import_module(viewsets_module_name)\n  File 
+                 \"/usr/lib64/python3.6/importlib/__init__.py\", line 126, in import_module\n    return 
+                 _bootstrap._gcd_import(name[level:], package, level)\n  File \"<frozen importlib._bootstrap>\",
+                  line 994, in _gcd_import\n  File \"<frozen importlib._bootstrap>\", line 971, in 
+                  _find_and_load\n  File \"<frozen importlib._bootstrap>\", line 955, in 
+                  _find_and_load_unlocked\n  File \"<frozen importlib._bootstrap>\", line 665, in 
+                  _load_unlocked\n  File \"<frozen importlib._bootstrap_external>\", line 678, in exec_module\n
+                    File \"<frozen importlib._bootstrap>\", line 219, in _call_with_frames_removed\n  File 
+                    \"/usr/local/lib/pulp/lib64/python3.6/site-packages/pulp_docker/app/viewsets.py\", line 24,
+                     in <module>\n    from . import models, serializers, tasks\n  File 
+                     \"/usr/local/lib/pulp/lib64/python3.6/site-packages/pulp_docker/app/serializers.py\", line
+                      76, in <module>\n    class DockerDistributionSerializer(platform.ModelSerializer):\nAttributeError: module 'pulpcore.plugin.serializers' has no attribute 
+                      'ModelSerializer'", "stderr_lines": ["Traceback (most recent call last):", "  File 
+                      \"/usr/local/lib/pulp/bin/pulp-manager\", line 11, in <module>", "    load_entry_point
+                      ('pulpcore==3.0.0b16', 'console_scripts', 'pulp-manager')()", "  File 
+                      \"/usr/local/lib/pulp/lib64/python3.6/site-packages/pulpcore/app/entry_points.py\", line
+                      
+                       11, in pulp_manager_entry_point", "    execute_from_command_line(sys.argv)", "  File \"/usr/local/lib/pulp/lib64/python3.6/site-packages/django/core/management/__init__.py\",
+                        line 381, in execute_from_command_line", "    utility.execute()", "  File 
+                        \"/usr/local/lib/pulp/lib64/python3.6/site-packages/django/core/management/__init__.
+                        py\", line 357, in execute", "    django.setup()", "  File 
+                        \"/usr/local/lib/pulp/lib64/python3.6/site-packages/django/__init__.py\", line 24, in 
+                        setup", "    apps.populate(settings.INSTALLED_APPS)", "  File 
+                        \"/usr/local/lib/pulp/lib64/python3.6/site-packages/django/apps/registry.py\", line 120,
+                         in populate", "    app_config.ready()", "  File 
+                         \"/usr/local/lib/pulp/lib64/python3.6/site-packages/pulpcore/app/apps.py\", line 74, in 
+                         ready", "    self.import_viewsets()", "  File 
+                         \"/usr/local/lib/pulp/lib64/python3.6/site-packages/pulpcore/app/apps.py\", line 107,
+                          in import_viewsets", "    self.viewsets_module = import_module(viewsets_module_name)",
+                           "  File \"/usr/lib64/python3.6/importlib/__init__.py\", line 126, in import_module", 
+                           "    return _bootstrap._gcd_import(name[level:], package, level)", "  File \"<frozen 
+                           importlib._bootstrap>\", line 994, in _gcd_import", "  File \"<frozen 
+                           importlib._bootstrap>\", line 971, in _find_and_load", "  File \"<frozen 
+                           importlib._bootstrap>\", line 955, in _find_and_load_unlocked", "  File \"<frozen 
+                           importlib._bootstrap>\", line 665, in _load_unlocked", "  File \"<frozen 
+                           importlib._bootstrap_external>\", line 678, in exec_module", "  File \"<frozen 
+                           importlib._bootstrap>\", line 219, in _call_with_frames_removed", "  File 
+                           \"/usr/local/lib/pulp/lib64/python3.6/site-packages/pulp_docker/app/viewsets.py\", 
+                           
+                           line 24, in <module>", "    from . import models, serializers, tasks", "  File \"/usr/local/lib/pulp/lib64/python3.6/site-packages/pulp_docker/app/serializers.py\", 
+                           line 76, in <module>", "    class DockerDistributionSerializer
+                           (platform.ModelSerializer):", "AttributeError: module 'pulpcore.plugin.serializers'
+                            has no attribute 'ModelSerializer'"], 
+        "stdout": "", 
+        "stdout_lines": []
+}
