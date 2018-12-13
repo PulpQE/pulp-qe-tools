@@ -1,7 +1,3 @@
-# To run it define the roles path 
-# or install via ansible-galaxy.
-# export ANSIBLE_ROLES_PATH="./ansible-pulp3/roles/"
-# then 
 # ansible-playbook -vvv -i "${PULP3_HOST}", -u root source-install.yml
 ---
 - hosts: all
@@ -21,6 +17,25 @@
       pulp-docker:
         app_label: "pulp_docker"
         source_dir: "https://github.com/pulp/pulp_docker/tarball/master"
+  pre_tasks:
+    - name: Install extra plugins requirements
+      package: name={{item}} state=present
+      loop:
+        - gcc
+        - make
+        - cmake
+        - bzip2-devel
+        - expat-devel
+        - file-devel
+        - glib2-devel
+        - libcurl-devel
+        - libxml2-devel
+        - python3-devel
+        - rpm-devel
+        - openssl-devel
+        - sqlite-devel
+        - xz-devel
+        - zlib-devel
   roles:
     - pulp3-postgresql
     - pulp3-workers

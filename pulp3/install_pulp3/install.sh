@@ -39,9 +39,24 @@ tempdir="$(mktemp --directory)"
 pushd "${tempdir}"
 
 git clone https://github.com/pulp/ansible-pulp3.git
-#apply fix to editable mode
+
+# apply fix to editable mode
 sed -i -e 's/editable: yes/editable: no/g' ./ansible-pulp3/roles/pulp3/tasks/install.yml
 sed -i -e 's/editable:yes/editable: no/g' ./ansible-pulp3/roles/pulp3/tasks/install.yml
+
+# apply fix required to install pulp_rpm on fedora
+sed -i -e "s/- name: Install pulpcore package from source/- name: pulp rpm\n      pip:\n        name: scikit-build\n        virtualenv: '{{pulp_install_dir}}'\n\n    - name: Install pulpcore package from source/g" ./ansible-pulp3/roles/pulp3/tasks/install.yml
+
+# echo "
+#     - name: Install pulp_rpm extra packages
+#       pip: 
+#         name= '{{item}}' 
+#         virtualenv = '{{ pulp_install_dir }}'
+#         virtualenv_command: '{{ pulp_python_interpreter }} -m venv'
+#       loop:
+#         - pip
+#         - scikit-build
+# "
 
 curl https://raw.githubusercontent.com/PulpQE/pulp-qe-tools/master/pulp3/install_pulp3/source-install.yml > source-install.yml
 
