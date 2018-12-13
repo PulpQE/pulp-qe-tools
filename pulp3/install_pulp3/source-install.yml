@@ -1,8 +1,4 @@
-# To run it define the roles path 
-# or install via ansible-galaxy.
-# export ANSIBLE_ROLES_PATH="./ansible-pulp3/roles/"
-# then 
-# ansible-playbook -vvv -i "${PULP3_HOST}", -u root source-install.yml
+# ansible-playbook -vvv -i <hostname>, -u root source-install.yml
 ---
 - hosts: all
   vars:
@@ -12,15 +8,9 @@
     pulp_secret_key: "unsafe_default"
     pulp_default_admin_password: admin
     pulp_install_plugins:
-      pulp-rpm:
-        app_label: "pulp_rpm"
-        source_dir: "https://github.com/pulp/pulp_rpm/tarball/master"
       pulp-file:
         app_label: "pulp_file"
         source_dir: "https://github.com/pulp/pulp_file/tarball/master"
-      pulp-docker:
-        app_label: "pulp_docker"
-        source_dir: "https://github.com/pulp/pulp_docker/tarball/master"
   roles:
     - pulp3-postgresql
     - pulp3-workers
