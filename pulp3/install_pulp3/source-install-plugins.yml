@@ -1,4 +1,4 @@
-# ansible-playbook -vvv -i <hostname>, -u root source-install.yml
+# ansible-playbook -vvv -i <hostname>, -u root source-install-plugins.yml
 ---
 - hosts: all
   vars:
@@ -7,6 +7,7 @@
     pulp_plugin_source_dir: "https://github.com/pulp/pulpcore-plugin/tarball/master"
     pulp_secret_key: "unsafe_default"
     pulp_default_admin_password: admin
+    pulp_pip_editable: no
     pulp_install_plugins:
       pulp-file:
         app_label: "pulp_file"
