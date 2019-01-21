@@ -22,11 +22,6 @@ git clone https://github.com/pulp/ansible-pulp3.git
 Apply some workarounds for known issues
 
 ``` bash
-# apply fix to editable mode (cannot use editable mode when installing from github tarball)
-# FIXME: The installer must have this flag as a variable -e pip_editable=false
-sed -i -e 's/editable: yes/editable: no/g' ./ansible-pulp3/roles/pulp3/tasks/install.yml
-sed -i -e 's/editable:yes/editable: no/g' ./ansible-pulp3/roles/pulp3/tasks/install.yml
-
 # pip should be updated
 # FIXME: installer should take care of it.
 sed -i -e "s/- name: Install pulpcore package from source/- name: Upgrade pip\n      pip:\n        name: pip\n        state: latest\n        virtualenv_command: '{{ pulp_python_interpreter }} -m venv'\n        virtualenv: '{{pulp_install_dir}}'\n\n    - name: Install pulpcore package from source/g" ./ansible-pulp3/roles/pulp3/tasks/install.yml
