@@ -42,10 +42,6 @@ pushd "${tempdir}"
 
 git clone https://github.com/pulp/ansible-pulp3.git
 
-# pip should be updated
-# FIXME: installer should take care of it.
-sed -i -e "s/- name: Install pulpcore package from source/- name: Upgrade pip\n      pip:\n        name: pip\n        state: latest\n        virtualenv_command: '{{ pulp_python_interpreter }} -m venv'\n        virtualenv: '{{pulp_install_dir}}'\n\n    - name: Install pulpcore package from source/g" ./ansible-pulp3/roles/pulp3/tasks/install.yml
-
 # get the playbook locally
 curl https://raw.githubusercontent.com/PulpQE/pulp-qe-tools/master/pulp3/install_pulp3/ansible.cfg > ansible.cfg
 curl https://raw.githubusercontent.com/PulpQE/pulp-qe-tools/master/pulp3/install_pulp3/"${PLAYBOOK}" > install.yml
