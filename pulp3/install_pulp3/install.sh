@@ -57,7 +57,7 @@ echo "Available roles."
 ansible-galaxy list
 
 echo "Starting Pulp 3 Installation."
-ansible-playbook -v -i "${HOST}", -u root install.yml 
+ansible-playbook -v -i "${HOST}", -u root install.yml -e pulp_content_host="${HOST}:8080"
 
 echo "Cleaning."
 popd
