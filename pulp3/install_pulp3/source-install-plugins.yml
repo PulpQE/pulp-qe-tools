@@ -10,13 +10,13 @@
     pulp_pip_editable: no
     pulp_install_plugins:
       pulp-file:
-        app_label: "pulp_file"
+        app_label: "file"
         source_dir: "https://github.com/pulp/pulp_file/tarball/master"
       pulp-rpm:
-        app_label: "pulp_rpm"
+        app_label: "rpm"
         source_dir: "https://github.com/pulp/pulp_rpm/tarball/master"
       pulp-docker:
-        app_label: "pulp_docker"
+        app_label: "docker"
         source_dir: "https://github.com/pulp/pulp_docker/tarball/master"
   pre_tasks:
     - name: Install pulp rpm requirements
