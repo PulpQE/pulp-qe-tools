@@ -3,7 +3,7 @@
 - hosts: all
   vars:
     ansible_python_interpreter: /usr/bin/python3
-    pulp_source_dir: "https://github.com/pulp/pulp/tarball/master"
+    pulp_source_dir: "https://github.com/pulp/pulpcore/tarball/master"
     pulp_plugin_source_dir: "https://github.com/pulp/pulpcore-plugin/tarball/master"
     pulp_secret_key: "unsafe_default"
     pulp_default_admin_password: admin
