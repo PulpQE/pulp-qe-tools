@@ -3,7 +3,9 @@
 - hosts: all
   vars:
     ansible_python_interpreter: /usr/bin/python3
-    pulp_source_dir: "https://github.com/pulp/pulpcore/tarball/master"
+    pulp_source_dir: 
+        - "https://github.com/pulp/pulpcore/tarball/master"
+        - psycopg2-binary
     pulp_plugin_source_dir: "https://github.com/pulp/pulpcore-plugin/tarball/master"
     pulp_secret_key: "unsafe_default"
     pulp_default_admin_password: admin
@@ -18,6 +20,9 @@
       pulp-docker:
         app_label: "docker"
         source_dir: "https://github.com/pulp/pulp_docker/tarball/master"
+      pulp-certguard:
+        app_label: "certguard"
+        source_dir: "https://github.com/pulp/pulp-certguard/tarball/master"
   pre_tasks:
     - name: Install pulp rpm requirements
       package: name={{item}} state=present
