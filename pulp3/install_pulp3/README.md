@@ -1,72 +1,59 @@
 # Install pulp3 using the ansible installer
 
-This recipes uses https://github.com/pulp/ansible-pulp3 roles to install Pulp 3 in a Fedora 28|29 server.
-
-## Install Pulp 3 with only the pulp_file plugin
+This recipes uses https://github.com/pulp/ansible-pulp3 roles to install Pulp 3 in a Fedora 28+ server.
 
 ### Curl installer
+
+> Installs using ansible-pulp3 roles and playbooks from github
 
 ```bash
 export PULP3_HOST=<hotname or IP>
 curl https://raw.githubusercontent.com/PulpQE/pulp-qe-tools/master/pulp3/install_pulp3/install.sh | bash
 ```
 
+> NOTE: The above by default installs with **rpm, file, docker and certguard** plugins. To install only core `export PULP3_PLAYBOOK=source-install.yml` use this same variable to specify a custom playbook.
+
 ### Manually
 
-Get the roles and install it
+> Installs using local ansible-pulp3 roles and local playbooks
+
+Clone the ansible-pulp3 roles locally (skip if you already have it)
 
 ```bash
-git clone https://github.com/pulp/ansible-pulp3.git
+git clone https://github.com/pulp/ansible-pulp3.git /path/to/ansible-pulp3/
 ```
 
-Apply some workarounds for known issues
-
-``` bash
-# pip should be updated
-# FIXME: installer should take care of it.
-sed -i -e "s/- name: Install pulpcore package from source/- name: Upgrade pip\n      pip:\n        name: pip\n        state: latest\n        virtualenv_command: '{{ pulp_python_interpreter }} -m venv'\n        virtualenv: '{{pulp_install_dir}}'\n\n    - name: Install pulpcore package from source/g" ./ansible-pulp3/roles/pulp3/tasks/install.yml
-
-```
-
-Install the roles
-
-```bash
-export ANSIBLE_ROLES_PATH="./ansible-pulp3/roles/"
-ansible-galaxy install -r ./ansible-pulp3/requirements.yml
-ansible-galaxy list
-```
-
-Clone this repository and run the playbook
+Clone this repository locally
 
 ```bash
 git clone https://github.com/PulpQE/pulp-qe-tools.git
 cd pulp-qe-tools/pulp3/install_pulp3/
-
-export ANSIBLE_ROLES_PATH="./ansible-pulp3/roles/"
-ansible-playbook -v -i <hostname or IP>, -u root source-install.yml
 ```
 
-## Install with all the plugins
+Configure some environment variables
 
-To install with all the set of plugins `rpm, file, docker`.
-
-### Curl installer
+**Required**
 
 ```bash
+# Where to install
 export PULP3_HOST=<hotname or IP>
-export PULP3_PLAYBOOK=source-install-plugins.yml
-curl https://raw.githubusercontent.com/PulpQE/pulp-qe-tools/master/pulp3/install_pulp3/install.sh | bash
+# Set to use local playbooks (not from github)
+export PULP3_INSTALL_MODE=local
 ```
 
-### Manually
-
-Follow the same steps for manual installation described above replacing the ansible-playbook with:
+**Optional**
 
 ```bash
-...
-export ANSIBLE_ROLES_PATH="./ansible-pulp3/roles/"
-ansible-playbook -v -i <hostname or IP>, -u root source-install-plugins.yml
+# To install only core change the playbook
+# or use a custom playbook name
+export PULP3_PLAYBOOK=source-install.yml  
+
+# Where did you cloned ansible-pulp3 (otherwise will fetch from github)
+export PULP3_ROLES_PATH=/path/to/ansible-pulp3/
 ```
 
+Install it
 
-> NOTE: Currently the installation with all the plugins is failing. Take a look at `traceback.log` file.
+```bash
+./install.sh
+```
