@@ -21,8 +21,8 @@
     - pulp3-webserver
     - pulp3-content
   post_tasks:
-    - name: Stop Firewalld
+    - name: Disable Firewalld
       systemd:
         name: firewalld
         state: stopped
-        masked: yes
+        enabled: False
