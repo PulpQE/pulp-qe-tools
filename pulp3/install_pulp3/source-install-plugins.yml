@@ -43,11 +43,11 @@
         - xz-devel
         - zlib-devel
   roles:
-    - pulp3-postgresql
-    - pulp3-workers
-    - pulp3-resource-manager
-    - pulp3-webserver
-    - pulp3-content
+    - pulp-database
+    - pulp-workers
+    - pulp-resource-manager
+    - pulp-webserver
+    - pulp-content
   post_tasks:
     - name: Disable Firewalld
       systemd:
