@@ -8,7 +8,7 @@
 # export PULP3_INSTALL_MODE=local
 # export PULP3_HOST=myhostname.com
 # export PULP3_PLAYBOOK=source-install-plugins.yml
-# export PULP3_ROLES_PATH=/path/to/local/ansible-pulp3 (optional)
+# export PULP3_ROLES_PATH=/path/to/local/ansible-pulp (optional)
 # ./install.sh
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
@@ -25,7 +25,7 @@ echo "Will install from ${INSTALL_MODE} - set PULP3_INSTALL_MODE=local|github en
 
 # Where the roles are located? if empty will fetch from github
 ROLES_PATH="${PULP3_ROLES_PATH:-github}"
-echo "Will use ${ROLES_PATH} roles - set PULP3_ROLES_PATH=/path/to/ansible-pulp3/ env var to override it"
+echo "Will use ${ROLES_PATH} roles - set PULP3_ROLES_PATH=/path/to/ansible-pulp/ env var to override it"
 
 # requirements
 if ! git --version > /dev/null; then
@@ -71,15 +71,15 @@ fi
 
 if [ "$ROLES_PATH" == "github" ]; then
     echo "Fetching ansible installer roles from github"
-    git clone https://github.com/pulp/ansible-pulp3.git
+    git clone https://github.com/pulp/ansible-pulp.git
 else
     echo "Using local roles from $ROLES_PATH"
-    cp -R "$ROLES_PATH" ./ansible-pulp3
+    cp -R "$ROLES_PATH" ./ansible-pulp
 fi
 
 echo "Installing roles."
-export ANSIBLE_ROLES_PATH="./ansible-pulp3/roles/"
-ansible-galaxy install -r ./ansible-pulp3/requirements.yml --force
+export ANSIBLE_ROLES_PATH="./ansible-pulp/roles/"
+ansible-galaxy install -r ./ansible-pulp/requirements.yml --force
 
 echo "Available roles."
 ansible-galaxy list

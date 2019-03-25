@@ -1,10 +1,10 @@
 # Install pulp3 using the ansible installer
 
-This recipes uses https://github.com/pulp/ansible-pulp3 roles to install Pulp 3 in a Fedora 28+ server.
+This recipes uses https://github.com/pulp/ansible-pulp roles to install Pulp 3 in a Fedora 28+ server.
 
 ### Curl installer
 
-> Installs using ansible-pulp3 roles and playbooks from github
+> Installs using ansible-pulp roles and playbooks from github
 
 ```bash
 export PULP3_HOST=<hotname or IP>
@@ -15,12 +15,12 @@ curl https://raw.githubusercontent.com/PulpQE/pulp-qe-tools/master/pulp3/install
 
 ### Manually
 
-> Installs using local ansible-pulp3 roles and local playbooks
+> Installs using local ansible-pulp roles and local playbooks
 
-Clone the ansible-pulp3 roles locally (skip if you already have it)
+Clone the ansible-pulp roles locally (skip if you already have it)
 
 ```bash
-git clone https://github.com/pulp/ansible-pulp3.git /path/to/ansible-pulp3/
+git clone https://github.com/pulp/ansible-pulp.git /path/to/ansible-pulp/
 ```
 
 Clone this repository locally
@@ -48,8 +48,8 @@ export PULP3_INSTALL_MODE=local
 # or use a custom playbook name
 export PULP3_PLAYBOOK=source-install.yml  
 
-# Where did you cloned ansible-pulp3 (otherwise will fetch from github)
-export PULP3_ROLES_PATH=/path/to/ansible-pulp3/
+# Where did you cloned ansible-pulp (otherwise will fetch from github)
+export PULP3_ROLES_PATH=/path/to/ansible-pulp/
 ```
 
 Install it
