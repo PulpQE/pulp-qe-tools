@@ -23,6 +23,9 @@
       pulp-certguard:
         app_label: "certguard"
         source_dir: "https://github.com/pulp/pulp-certguard/tarball/master"
+      pulp-ansible:
+        app_label: "ansible"
+        source_dir: "https://github.com/pulp/pulp_ansible/tarball/master"
   pre_tasks:
     - name: Install pulp rpm requirements
       package: name={{item}} state=present
@@ -56,3 +59,8 @@
         name: firewalld
         state: stopped
         enabled: False
+    - name: Allow the use of `$ pulpenv` to activate pulp python env
+      copy:
+        src: pulpenv.sh
+        dest: /bin/pulpenv
+        mode: preserve

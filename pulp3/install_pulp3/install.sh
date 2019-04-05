@@ -55,6 +55,10 @@ fi
 
 # make a temp dir to clone all the things
 tempdir="$(mktemp --directory)"
+
+# make pulpenv.sh available on tmpdir
+cp ./pulpenv.sh "${tempdir}"/
+
 pushd "${tempdir}"
 
 if [ "$INSTALL_MODE" == "github" ]; then
