@@ -1,0 +1,158 @@
+# ansible-playbook -vvv -i <hostname>, -u root source-install-plugins.yml
+---
+- hosts: all
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+    pulp_source_dir:
+        - "https://github.com/pulp/pulpcore/tarball/master"
+        - psycopg2-binary
+    pulp_plugin_source_dir: "https://github.com/pulp/pulpcore-plugin/tarball/master"
+    pulp_secret_key: "unsafe_default"
+    pulp_default_admin_password: admin
+    pulp_pip_editable: no
+    pulp_install_plugins:
+      pulp-file:
+        app_label: "file"
+        source_dir: "https://github.com/pulp/pulp_file/tarball/master"
+      pulp-rpm:
+        app_label: "rpm"
+        source_dir: "https://github.com/pulp/pulp_rpm/tarball/master"
+      pulp-docker:
+        app_label: "docker"
+        source_dir: "https://github.com/pulp/pulp_docker/tarball/master"
+      pulp-certguard:
+        app_label: "certguard"
+        source_dir: "https://github.com/pulp/pulp-certguard/tarball/master"
+      pulp-ansible:
+        app_label: "ansible"
+        source_dir: "https://github.com/pulp/pulp_ansible/tarball/master"
+    plugins_list: "{{ pulp_install_plugins.keys() | join(',') }}"
+    install_dev_tools: off
+  pre_tasks:
+    - name: Prepare selected list of plugins from comma separated list
+      set_fact:
+        seleted_plugins: "{{ plugins_list.split(',') | map('trim') | list }}"
+
+    - name: Rebuild Dictionary of Plugins to install
+      set_fact:
+        pulp_install_plugins: "{{ pulp_install_plugins | dict2items | selectattr('key', 'in', seleted_plugins) | list | items2dict }}"
+
+    - name: Print list of selected plugins for debugging
+      debug:
+        msg: "{{ pulp_install_plugins }}"
+
+    - name: Install pulp rpm requirements
+      package:
+        name:
+          - gcc
+          - make
+          - cmake
+          - bzip2-devel
+          - expat-devel
+          - file-devel
+          - glib2-devel
+          - libcurl-devel
+          - libxml2-devel
+          - python3-devel
+          - rpm-devel
+          - openssl-devel
+          - sqlite-devel
+          - xz-devel
+          - zlib-devel
+        state: present
+      retries: 5
+      register: result
+      until: result is succeeded
+      when: "'pulp-rpm' in pulp_install_plugins"
+  roles:
+    - pulp-database
+    - pulp-workers
+    - pulp-resource-manager
+    - pulp-webserver
+    - pulp-content
+  environment:
+    DJANGO_SETTINGS_MODULE: pulpcore.app.settings
+  post_tasks:
+    - name: Disable Firewalld
+      systemd:
+        name: firewalld
+        state: stopped
+        enabled: False
+
+    - block:
+
+        - name: Set includedir in sudoers
+          lineinfile:
+            dest: /etc/sudoers
+            line: "#includedir /etc/sudoers.d"
+            state: present
+            validate: "/usr/sbin/visudo -cf %s"
+        - name: Add user "{{ pulp_user }}" to sudo
+          lineinfile:
+            path: "/etc/sudoers.d/{{ pulp_user }}"
+            line: '{{ pulp_user }} ALL=(ALL) NOPASSWD: ALL'
+            state: present
+            mode: 0440
+            create: yes
+            validate: 'visudo -cf %s'
+        - name: Allow the use of commands like `$ pcmd reset|stop|start|status|activate`
+          copy:
+            src: pcmd.sh
+            dest: /bin/pcmd
+            mode: preserve
+        - name: Install several useful packages (distro-agnostic)
+          package:
+            name:
+              - dstat
+              - git
+              - htop
+              - httpie
+              - iotop
+              - jnettop
+              - jq
+              - ncdu
+              - tmux
+              - tree
+              - wget
+              - vim
+            state: present
+          retries: 5
+          register: result
+          until: result is succeeded
+
+        - name: Install several useful packages (Fedora-specific)
+          package:
+            name:
+              - dnf-utils
+              - fd-find
+              - fzf
+              - ripgrep
+            state: present
+          retries: 5
+          register: result
+          until: result is succeeded
+          when: ansible_distribution == 'Fedora'
+
+      become: true
+      when: install_dev_tools == 'on'
+
+    - block:
+
+        - name: Install requirements for debugging pulp
+          pip:
+            name:
+              - django-extensions
+              - ipython
+              - ipdb
+            state: present
+            virtualenv: '{{ pulp_install_dir }}'
+            virtualenv_command: '{{ pulp_python_interpreter }} -m venv'
+
+          retries: 5
+          register: result
+          until: result is succeeded
+          notify: Collect static content
+
+      become: true
+      become_user: '{{ pulp_user }}'
+      when: install_dev_tools == 'on'
