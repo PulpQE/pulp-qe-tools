@@ -109,6 +109,7 @@ fi
 echo "Installing roles."
 export ANSIBLE_ROLES_PATH="./ansible-pulp/roles/"
 ansible-galaxy install -r ./ansible-pulp/requirements.yml --force
+ansible-galaxy install pulp.pulp_rpm_prerequisites
 
 echo "Available roles."
 ansible-galaxy list
@@ -126,6 +127,7 @@ popd
 
 rm -r -f "${tempdir}"
 
+sleep 4
 echo "Is it working?"
 # Externally serving on port 80 by nginx
 curl -u admin:admin "${HOST}":80/pulp/api/v3/status/
