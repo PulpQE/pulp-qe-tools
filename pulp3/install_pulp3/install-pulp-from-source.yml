@@ -40,31 +40,9 @@
     - name: Print list of selected plugins for debugging
       debug:
         msg: "{{ pulp_install_plugins }}"
-
-    - name: Install pulp rpm requirements
-      package:
-        name:
-          - gcc
-          - make
-          - cmake
-          - bzip2-devel
-          - expat-devel
-          - file-devel
-          - glib2-devel
-          - libcurl-devel
-          - libxml2-devel
-          - python3-devel
-          - rpm-devel
-          - openssl-devel
-          - sqlite-devel
-          - xz-devel
-          - zlib-devel
-        state: present
-      retries: 5
-      register: result
-      until: result is succeeded
-      when: "'pulp-rpm' in pulp_install_plugins"
   roles:
+    - role: pulp.pulp_rpm_prerequisites
+      when: "'pulp-rpm' in pulp_install_plugins"
     - pulp-database
     - pulp-workers
     - pulp-resource-manager
