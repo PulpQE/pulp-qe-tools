@@ -11,7 +11,7 @@ git clone https://github.com/pulpqe/pulp-2-tests
 python3.6 -m venv venv 
 source venv/bin/activate
 pip install --upgrade pip
-pip install pytest pytest-html
+pip install pytest==4.1.0 pytest-html
 pip install -e pulp-smash[dev]
 pip install -e pulp-2-tests[dev]
 
