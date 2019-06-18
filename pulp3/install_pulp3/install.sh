@@ -119,8 +119,11 @@ ansible-playbook -v -c "${ANSIBLE_CONNECTION}" -i "${HOST}", -u root install.yml
   -e pulp_content_host="${CONTENT_HOST}":"${CONTENT_HOST_PORT}" \
   -e pulp_content_bind=0.0.0.0:"${CONTENT_HOST_PORT}" \
   -e pulp_api_port="${HOST_PORT}" \
+  -e pulp_api_host="${CONTENT_HOST}":"${HOST_PORT}" \
+  -e pulp_api_bind=0.0.0.0:"${HOST_PORT}" \
   -e plugins_list="${PLUGINS}" \
-  -e install_dev_tools="${DEV_TOOLS}"
+  -e install_dev_tools="${DEV_TOOLS}" \
+  -e ansible_python_interpreter="/usr/bin/python"
 
 echo "Cleaning."
 popd
@@ -129,5 +132,4 @@ rm -r -f "${tempdir}"
 
 sleep 4
 echo "Is it working?"
-# Externally serving on port 80 by nginx
-curl -u admin:admin "${HOST}":80/pulp/api/v3/status/
+curl -u admin:admin "${HOST}":"${HOST_PORT}"/pulp/api/v3/status/
