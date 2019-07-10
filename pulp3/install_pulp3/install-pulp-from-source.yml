@@ -7,9 +7,11 @@
         - "https://github.com/pulp/pulpcore/tarball/master"
         - psycopg2-binary
     pulp_plugin_source_dir: "https://github.com/pulp/pulpcore-plugin/tarball/master"
-    pulp_secret_key: "unsafe_default"
     pulp_default_admin_password: admin
     pulp_pip_editable: no
+    pulp_settings:
+      secret_key: 'secret'
+      content_host: "{{ pulp_content_host }}"
     pulp_install_plugins:
       pulp-file:
         app_label: "file"
