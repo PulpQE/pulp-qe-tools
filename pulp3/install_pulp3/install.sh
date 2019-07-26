@@ -123,7 +123,6 @@ ansible-playbook -v -c "${ANSIBLE_CONNECTION}" -i "${HOST}", -u root install.yml
   -e pulp_api_bind=0.0.0.0:"${HOST_PORT}" \
   -e plugins_list="${PLUGINS}" \
   -e install_dev_tools="${DEV_TOOLS}" \
-  -e ansible_python_interpreter="/usr/bin/python"
 
 echo "Cleaning."
 popd
