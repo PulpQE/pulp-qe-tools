@@ -123,7 +123,9 @@ ansible-playbook -v -c "${ANSIBLE_CONNECTION}" -i "${HOST}", -u root install.yml
   -e pulp_api_bind=0.0.0.0:"${HOST_PORT}" \
   -e plugins_list="${PLUGINS}" \
   -e install_dev_tools="${DEV_TOOLS}" \
-
+  -e ansible_api_hostname="${CONTENT_HOST}":"${HOST_PORT}" \
+  -e ansible_content_hostname="${CONTENT_HOST}":"${CONTENT_HOST_PORT}"/pulp/content
+  
 echo "Cleaning."
 popd
 

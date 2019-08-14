@@ -12,6 +12,8 @@
     pulp_settings:
       secret_key: 'secret'
       content_host: "{{ pulp_content_host }}"
+      ansible_api_hostname: "{{ ansible_api_hostname }}"
+      ansible_content_hostname: "{{ ansible_content_hostname }}"
     pulp_install_plugins:
       pulp-file:
         app_label: "file"
