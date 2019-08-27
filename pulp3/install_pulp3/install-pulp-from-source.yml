@@ -91,11 +91,12 @@
               - iotop
               - jnettop
               - jq
+              - lsof
               - ncdu
               - tmux
               - tree
-              - wget
               - vim
+              - wget
             state: present
           retries: 5
           register: result
