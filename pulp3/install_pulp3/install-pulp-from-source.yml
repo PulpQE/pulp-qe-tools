@@ -3,6 +3,7 @@
 - hosts: all
   vars:
     ansible_python_interpreter: /usr/bin/python3
+    pulp_use_system_wide_pkgs: True
     pulp_source_dir:
         - "https://github.com/pulp/pulpcore/tarball/master"
         - psycopg2-binary
